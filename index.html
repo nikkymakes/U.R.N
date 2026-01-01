@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>U.R.N.™ - Pre-Engagement Decision Filter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 min-h-screen">
+    <div id="app" class="min-h-screen text-gray-100 p-4 md:p-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-12">
+                <div class="inline-block">
+                    <h1 class="text-5xl md:text-6xl font-bold mb-2 bg-gradient-to-r from-amber-400 via-blue-400 to-green-400 text-transparent bg-clip-text">
+                        U.R.N.™
+                    </h1>
+                    <p class="text-gray-400 text-sm tracking-wide">USEFUL • REQUIRED • NEEDED</p>
+                </div>
+                <p class="text-gray-300 mt-4 text-lg">The filter you use before burnout, not after</p>
+            </div>
+
+            <!-- Main Content -->
+            <div id="content"></div>
+
+            <!-- Footer -->
+            <div class="text-center mt-12 pt-8 border-t border-slate-700">
+                <p class="text-gray-400 text-sm">
+                    U.R.N.™ by Adenike Omoregbee • © 2026 All Rights Reserved
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        let state = {
+            stage: 'welcome',
+            profile: null,
+            situation: '',
+            answers: {},
+            currentQuestion: 0
+        };
+
+        // Data
+        const profiles = [
+            {
+                id: 'junior',
+                title: 'Junior + Abundant Capacity',
+                subtitle: 'Skill-Building Phase',
+                threshold: 'USEFUL alone might be enough',
+                description: 'You have energy to invest in learning opportunities'
+            },
+            {
+                id: 'mid',
+                title: 'Mid-Career + Moderate Capacity',
+                subtitle: 'Strategic Positioning',
+                threshold: 'Must be USEFUL + strategically aligned',
+                description: 'You need to advance specific goals'
+            },
+            {
+                id: 'senior',
+                title: 'Senior + Stretched Capacity',
+                subtitle: 'Capacity Protection',
+                threshold: 'REQUIRED or decline',
+                description: 'Highest threshold - irreplaceable or nothing'
+            },
+            {
+                id: 'crisis',
+                title: 'Crisis Mode',
+                subtitle: 'Any Level + Capacity Crash',
+                threshold: 'Can I maintain core commitments?',
+                description: 'Maintenance is achievement'
+            }
+        ];
+
+        const questions = [
+            {
+                text: "What problem is claimed to exist?",
+                placeholder: "Describe the situation or request..."
+            },
+            {
+                text: "What happens if you step back?",
+                placeholder: "Be specific about the consequences..."
+            },
+            {
+                text: "What specifically fails without you?",
+                placeholder: "What breaks if you're not involved..."
+            },
+            {
+                text: "Is your presence solving the problem — or absorbing discomfort?",
+                placeholder: "Honest assessment..."
+            },
+            {
+                text: "Who benefits if you stay? Who benefits if you leave?",
+                placeholder: "Consider both sides..."
+            }
+        ];
+
+        // Logic
+        function getPlacement() {
+            const text = Object.values(state.answers).join(' ').toLowerCase();
+            
+            if (state.profile.id === 'crisis') {
+                if (text.includes('core') || text.includes('essential')) {
+                    return {
+                        decision: 'ACCEPT (LIMITED)',
+                        color: 'text-amber-400',
+                        reasoning: 'This aligns with maintaining core commitments. Set clear boundaries around scope.'
+                    };
+                }
+                return {
+                    decision: 'DECLINE',
+                    color: 'text-red-400',
+                    reasoning: 'Protect your capacity. This is not essential to your core commitments right now.'
+                };
+            }
+
+            if (state.profile.id === 'senior') {
+                if (text.includes('irreplaceable') || text.includes('only')) {
+                    return {
+                        decision: 'ACCEPT',
+                        color: 'text-green-400',
+                        reasoning: 'You are REQUIRED. This meets your threshold for engagement.'
+                    };
+                }
+                return {
+                    decision: 'DECLINE',
+                    color: 'text-red-400',
+                    reasoning: 'This does not meet your REQUIRED threshold. Someone else can handle this.'
+                };
+            }
+
+            if (state.profile.id === 'mid') {
+                if (text.includes('strategic') || text.includes('advance')) {
+                    return {
+                        decision: 'ACCEPT',
+                        color: 'text-green-400',
+                        reasoning: 'This is USEFUL and strategically aligned with your goals.'
+                    };
+                }
+                return {
+                    decision: 'LIMIT SCOPE',
+                    color: 'text-blue-400',
+                    reasoning: 'Define narrow parameters. Extract learning value without full commitment.'
+                };
+            }
+
+            return {
+                decision: 'ACCEPT',
+                color: 'text-green-400',
+                reasoning: 'This provides USEFUL learning opportunity. Set boundaries around time investment.'
+            };
+        }
+
+        // Render functions
+        function renderWelcome() {
+            return `
+                <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-8 backdrop-blur">
+                    <h2 class="text-2xl font-semibold mb-4">Pre-Engagement Decision Filter</h2>
+                    <p class="text-gray-300 mb-6">
+                        This tool helps you decide whether your involvement in a situation is actually necessary — 
+                        BEFORE time, energy, or identity gets invested.
+                    </p>
+                    <div class="bg-slate-900/50 p-6 rounded border border-slate-600 mb-6">
+                        <h3 class="text-amber-400 font-semibold mb-3">How it works:</h3>
+                        <ol class="space-y-2 text-gray-300">
+                            <li>1. Establish your current profile (experience + capacity)</li>
+                            <li>2. Describe the situation you're considering</li>
+                            <li>3. Answer 5 assessment questions</li>
+                            <li>4. Receive clear placement decision</li>
+                        </ol>
+                    </div>
+                    <button onclick="goToProfile()" class="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-900 font-semibold py-3 px-6 rounded flex items-center justify-center gap-2 transition-all">
+                        Start Assessment
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
+                </div>
+            `;
+        }
+
+        function renderProfile() {
+            return `
+                <div class="space-y-4">
+                    <h2 class="text-2xl font-semibold mb-6">Select Your Current Profile</h2>
+                    ${profiles.map(p => `
+                        <button onclick='selectProfile(${JSON.stringify(p)})' class="w-full bg-slate-800/50 border border-slate-700 hover:border-amber-400 rounded-lg p-6 text-left transition-all group">
+                            <h3 class="text-xl font-semibold text-amber-400 group-hover:text-amber-300 mb-1">
+                                ${p.title}
+                            </h3>
+                            <p class="text-blue-400 text-sm mb-2">${p.subtitle}</p>
+                            <p class="text-gray-400 text-sm mb-3">${p.description}</p>
+                            <p class="text-gray-300 text-sm font-mono bg-slate-900/50 p-2 rounded border border-slate-600">
+                                Threshold: ${p.threshold}
+                            </p>
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderSituation() {
+            return `
+                <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-8 backdrop-blur">
+                    <h2 class="text-2xl font-semibold mb-2">Describe the Situation</h2>
+                    <p class="text-gray-400 mb-6">What request or opportunity are you considering?</p>
+                    <textarea id="situationInput" class="w-full bg-slate-900/50 border border-slate-600 rounded p-4 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 min-h-[150px] resize-y" placeholder="Example: I've been asked to join a committee that meets weekly...">${state.situation}</textarea>
+                    <div class="flex gap-3 mt-6">
+                        <button onclick="goToProfile()" class="px-6 py-3 border border-slate-600 rounded hover:border-slate-500 transition-all">
+                            Back
+                        </button>
+                        <button onclick="submitSituation()" class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded flex items-center justify-center gap-2 transition-all">
+                            Continue to Assessment
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderAssessment() {
+            const q = questions[state.currentQuestion];
+            return `
+                <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-8 backdrop-blur">
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm text-gray-400">Question ${state.currentQuestion + 1} of ${questions.length}</span>
+                            <div class="flex gap-1">
+                                ${questions.map((_, idx) => `
+                                    <div class="h-1 w-8 rounded ${idx <= state.currentQuestion ? 'bg-green-400' : 'bg-slate-600'}"></div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h2 class="text-xl font-semibold mb-6 text-green-400">
+                        ${q.text}
+                    </h2>
+                    
+                    <textarea id="answerInput" class="w-full bg-slate-900/50 border border-slate-600 rounded p-4 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-green-400 min-h-[150px] resize-y" placeholder="${q.placeholder}">${state.answers[state.currentQuestion + 1] || ''}</textarea>
+                    
+                    <div class="flex gap-3 mt-6">
+                        <button onclick="goBack()" class="px-6 py-3 border border-slate-600 rounded hover:border-slate-500 transition-all">
+                            Back
+                        </button>
+                        <button onclick="submitAnswer()" class="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 px-6 rounded flex items-center justify-center gap-2 transition-all">
+                            ${state.currentQuestion < questions.length - 1 ? 'Next Question' : 'Get Placement'}
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderResult() {
+            const placement = getPlacement();
+            return `
+                <div class="space-y-6">
+                    <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-8 backdrop-blur text-center">
+                        <h2 class="text-sm text-gray-400 uppercase tracking-wide mb-3">PLACEMENT</h2>
+                        <div class="text-4xl md:text-5xl font-bold mb-4 ${placement.color}">
+                            ${placement.decision}
+                        </div>
+                        <p class="text-gray-300 text-lg max-w-2xl mx-auto">
+                            ${placement.reasoning}
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-6 backdrop-blur">
+                        <h3 class="text-lg font-semibold mb-3 text-blue-400">Your Profile</h3>
+                        <p class="text-gray-300">${state.profile.title}</p>
+                        <p class="text-gray-400 text-sm mt-1">Threshold: ${state.profile.threshold}</p>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button onclick="resetAssessment()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded flex items-center justify-center gap-2 transition-all">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"></polyline>
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                            </svg>
+                            New Assessment
+                        </button>
+                        <button onclick="downloadResult()" class="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-900 font-semibold py-3 px-6 rounded flex items-center justify-center gap-2 transition-all">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Download Result
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Action handlers
+        function goToProfile() {
+            state.stage = 'profile';
+            render();
+        }
+
+        function selectProfile(profile) {
+            state.profile = profile;
+            state.stage = 'situation';
+            render();
+        }
+
+        function submitSituation() {
+            const input = document.getElementById('situationInput');
+            if (input && input.value.trim()) {
+                state.situation = input.value;
+                state.answers[0] = input.value;
+                state.stage = 'assessment';
+                state.currentQuestion = 0;
+                render();
+            }
+        }
+
+        function submitAnswer() {
+            const input = document.getElementById('answerInput');
+            if (input && input.value.trim()) {
+                state.answers[state.currentQuestion + 1] = input.value;
+                
+                if (state.currentQuestion < questions.length - 1) {
+                    state.currentQuestion++;
+                    render();
+                } else {
+                    state.stage = 'result';
+                    render();
+                }
+            }
+        }
+
+        function goBack() {
+            if (state.currentQuestion > 0) {
+                state.currentQuestion--;
+                render();
+            } else {
+                state.stage = 'situation';
+                render();
+            }
+        }
+
+        function resetAssessment() {
+            state = {
+                stage: 'welcome',
+                profile: null,
+                situation: '',
+                answers: {},
+                currentQuestion: 0
+            };
+            render();
+        }
+
+        function downloadResult() {
+            const placement = getPlacement();
+            const text = `U.R.N.™ Assessment\n\nProfile: ${state.profile.title}\nDecision: ${placement.decision}\n\nReasoning: ${placement.reasoning}`;
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'urn-assessment.txt';
+            a.click();
+        }
+
+        // Main render
+        function render() {
+            const content = document.getElementById('content');
+            
+            switch(state.stage) {
+                case 'welcome':
+                    content.innerHTML = renderWelcome();
+                    break;
+                case 'profile':
+                    content.innerHTML = renderProfile();
+                    break;
+                case 'situation':
+                    content.innerHTML = renderSituation();
+                    break;
+                case 'assessment':
+                    content.innerHTML = renderAssessment();
+                    break;
+                case 'result':
+                    content.innerHTML = renderResult();
+                    break;
+            }
+        }
+
+        // Initialize
+        render();
+    </script>
+</body>
+</html>
