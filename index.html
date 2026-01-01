@@ -105,57 +105,185 @@
         // Logic
         function getPlacement() {
             const text = Object.values(state.answers).join(' ').toLowerCase();
+            const situation = state.answers[0] || '';
+            const stepBack = state.answers[1] || '';
+            const whatFails = state.answers[2] || '';
+            const solvingVsAbsorbing = state.answers[3] || '';
+            const whoBenefits = state.answers[4] || '';
             
+            let decision, color, reasoning, breakdown, nextSteps, boundaryLanguage;
+            
+            // Crisis Mode Logic
             if (state.profile.id === 'crisis') {
-                if (text.includes('core') || text.includes('essential')) {
-                    return {
-                        decision: 'ACCEPT (LIMITED)',
-                        color: 'text-amber-400',
-                        reasoning: 'This aligns with maintaining core commitments. Set clear boundaries around scope.'
-                    };
+                const isCore = text.includes('core') || text.includes('essential') || text.includes('critical');
+                const canDelegate = text.includes('someone else') || text.includes('delegate') || text.includes('others can');
+                
+                if (isCore && !canDelegate) {
+                    decision = 'ACCEPT (LIMITED)';
+                    color = 'text-amber-400';
+                    breakdown = `**USEFUL:** Minimal - but that's not the question right now
+**REQUIRED:** Yes - this appears tied to core commitments
+**NEEDED:** Your assessment suggests this is non-negotiable`;
+                    reasoning = `Based on your responses, particularly "${whatFails.substring(0, 100)}...", this appears connected to your core commitments. In crisis mode, you're not optimizing - you're maintaining.`;
+                    nextSteps = `1. Define the absolute minimum viable engagement
+2. Set a clear time boundary (e.g., "I can commit until [date]")
+3. Identify one task you'll stop doing to make room
+4. Schedule a review point to reassess`;
+                    boundaryLanguage = `"I can handle [specific deliverable] by [date]. I cannot take on [additional scope]. Let's revisit in [timeframe]."`;
+                } else {
+                    decision = 'DECLINE';
+                    color = 'text-red-400';
+                    breakdown = `**USEFUL:** Possibly - but that's not your question right now
+**REQUIRED:** No - others can handle this
+**NEEDED:** Your capacity protection is the priority`;
+                    reasoning = `Your responses indicate this isn't irreplaceable: "${stepBack.substring(0, 100)}..." In crisis mode, "useful" isn't enough. You need REQUIRED. This doesn't meet that threshold.`;
+                    nextSteps = `1. Decline clearly and quickly (delayed no = prolonged guilt)
+2. Do NOT offer alternatives or soften with "maybe later"
+3. If pressed, repeat your boundary without elaboration
+4. Return to your core commitments`;
+                    boundaryLanguage = `"I'm not available for this right now. I need to focus on my existing commitments."`;
                 }
-                return {
-                    decision: 'DECLINE',
-                    color: 'text-red-400',
-                    reasoning: 'Protect your capacity. This is not essential to your core commitments right now.'
-                };
             }
-
-            if (state.profile.id === 'senior') {
-                if (text.includes('irreplaceable') || text.includes('only')) {
-                    return {
-                        decision: 'ACCEPT',
-                        color: 'text-green-400',
-                        reasoning: 'You are REQUIRED. This meets your threshold for engagement.'
-                    };
+            
+            // Senior Profile Logic
+            else if (state.profile.id === 'senior') {
+                const isIrreplaceable = text.includes('irreplaceable') || text.includes('only') || text.includes('no one else');
+                const isInfrastructure = text.includes('break') || text.includes('fail') || text.includes('collapse');
+                const absorbingDiscomfort = solvingVsAbsorbing.toLowerCase().includes('absorb') || 
+                                          solvingVsAbsorbing.toLowerCase().includes('comfort') ||
+                                          solvingVsAbsorbing.toLowerCase().includes('buffer');
+                
+                if (isIrreplaceable && isInfrastructure) {
+                    decision = 'ACCEPT';
+                    color = 'text-green-400';
+                    breakdown = `**USEFUL:** Yes
+**REQUIRED:** Yes - you are irreplaceable here
+**NEEDED:** Systems break without you`;
+                    reasoning = `Your analysis shows you're REQUIRED: "${whatFails.substring(0, 120)}..." This meets your senior threshold. You're not just useful - you're structurally necessary.`;
+                    nextSteps = `1. Accept with clear scope definition
+2. Document your unique contribution (make yourself replaceable over time)
+3. Set a review point: "Let's assess progress in [timeframe]"
+4. Identify what you'll deprioritize to make room`;
+                    boundaryLanguage = `"Yes, I can take this on. My focus will be [specific scope]. I'll need to reduce capacity for [other thing]. Let's check in [timeframe]."`;
+                } else if (absorbingDiscomfort) {
+                    decision = 'DECLINE';
+                    color = 'text-red-400';
+                    breakdown = `**USEFUL:** You're providing comfort, not solutions
+**REQUIRED:** No - this is about discomfort absorption
+**NEEDED:** Only as a buffer - not as a problem-solver`;
+                    reasoning = `Your answer to question 4 reveals the issue: "${solvingVsAbsorbing.substring(0, 120)}..." You're absorbing organizational discomfort. At senior level, this is a capacity trap.`;
+                    nextSteps = `1. Decline without apology or explanation
+2. If this is a pattern, address the systemic issue: "I notice I'm frequently asked to..."
+3. Redirect to actual problem-owners
+4. Protect your strategic capacity`;
+                    boundaryLanguage = `"This doesn't require my involvement. [Other person/team] should handle this directly."`;
+                } else {
+                    decision = 'DECLINE';
+                    color = 'text-red-400';
+                    breakdown = `**USEFUL:** Possibly
+**REQUIRED:** No - not irreplaceable
+**NEEDED:** Your threshold is REQUIRED, not just useful`;
+                    reasoning = `Looking at what happens if you step back: "${stepBack.substring(0, 120)}..." Someone else can do this. Your threshold is irreplaceable or nothing.`;
+                    nextSteps = `1. Decline clearly
+2. If appropriate, suggest who should handle it
+3. Do not over-explain or apologize
+4. Return to strategic work`;
+                    boundaryLanguage = `"I'm not the right person for this. [Suggestion if appropriate]."`;
                 }
-                return {
-                    decision: 'DECLINE',
-                    color: 'text-red-400',
-                    reasoning: 'This does not meet your REQUIRED threshold. Someone else can handle this.'
-                };
             }
-
-            if (state.profile.id === 'mid') {
-                if (text.includes('strategic') || text.includes('advance')) {
-                    return {
-                        decision: 'ACCEPT',
-                        color: 'text-green-400',
-                        reasoning: 'This is USEFUL and strategically aligned with your goals.'
-                    };
+            
+            // Mid-Career Profile Logic
+            else if (state.profile.id === 'mid') {
+                const isStrategic = text.includes('strategic') || text.includes('advance') || text.includes('goal');
+                const isSkillBuilding = text.includes('learn') || text.includes('develop') || text.includes('grow');
+                const isTimeIntensive = text.includes('weekly') || text.includes('ongoing') || text.includes('commitment');
+                
+                if (isStrategic || isSkillBuilding) {
+                    decision = 'ACCEPT';
+                    color = 'text-green-400';
+                    breakdown = `**USEFUL:** Yes - advances your goals
+**REQUIRED:** Strategically valuable
+**NEEDED:** Aligns with your positioning`;
+                    reasoning = `This meets your strategic threshold. From your situation: "${situation.substring(0, 120)}..." This is USEFUL and strategically aligned with where you're headed.`;
+                    nextSteps = `1. Accept with defined parameters
+2. Set explicit success metrics: "I'll know this was worth it if..."
+3. Define the time boundary upfront
+4. Build exit criteria: "If X happens, I'll reassess"`;
+                    boundaryLanguage = `"Yes, I'm interested. I can commit [specific scope/time]. I'll reassess at [checkpoint]."`;
+                } else if (isTimeIntensive) {
+                    decision = 'LIMIT SCOPE';
+                    color = 'text-blue-400';
+                    breakdown = `**USEFUL:** Possibly
+**REQUIRED:** Not established
+**NEEDED:** Unclear strategic value`;
+                    reasoning = `The time commitment you described: "${situation.substring(0, 120)}..." doesn't clearly map to strategic value. Extract learning without full commitment.`;
+                    nextSteps = `1. Counter with reduced scope: "I can do [specific piece], not [full commitment]"
+2. Set a trial period: "Let me try this for [timeframe] and reassess"
+3. Define what you're learning/gaining
+4. Build in exit ramps`;
+                    boundaryLanguage = `"I can't commit to [full scope], but I could [limited version]. Let's try that for [timeframe] and reassess."`;
+                } else {
+                    decision = 'LIMIT SCOPE';
+                    color = 'text-blue-400';
+                    breakdown = `**USEFUL:** Possibly
+**REQUIRED:** Not for you specifically
+**NEEDED:** Strategic value unclear`;
+                    reasoning = `Looking at who benefits: "${whoBenefits.substring(0, 120)}..." The value to you isn't clear. Define narrow parameters to extract learning without overcommitment.`;
+                    nextSteps = `1. Identify the smallest viable engagement
+2. Extract specific learning/relationship value
+3. Set clear time boundaries
+4. Don't let scope creep - refer back to original agreement`;
+                    boundaryLanguage = `"I can help with [specific narrow task]. That's the extent of my bandwidth right now."`;
                 }
-                return {
-                    decision: 'LIMIT SCOPE',
-                    color: 'text-blue-400',
-                    reasoning: 'Define narrow parameters. Extract learning value without full commitment.'
-                };
             }
-
-            return {
-                decision: 'ACCEPT',
-                color: 'text-green-400',
-                reasoning: 'This provides USEFUL learning opportunity. Set boundaries around time investment.'
-            };
+            
+            // Junior Profile Logic
+            else {
+                const isLearning = text.includes('learn') || text.includes('experience') || text.includes('skill');
+                const isExploitation = text.includes('always') || text.includes('default') || 
+                                      whoBenefits.toLowerCase().includes('they') || 
+                                      whoBenefits.toLowerCase().includes('them');
+                
+                if (isLearning && !isExploitation) {
+                    decision = 'ACCEPT';
+                    color = 'text-green-400';
+                    breakdown = `**USEFUL:** Yes - provides learning value
+**REQUIRED:** Building your capability
+**NEEDED:** Strategic skill-building`;
+                    reasoning = `This offers USEFUL learning opportunity: "${situation.substring(0, 120)}..." At this stage, skill-building matters. Accept with boundaries around time investment.`;
+                    nextSteps = `1. Accept with enthusiasm AND limits
+2. Define what you're learning: "I want to develop [skill]"
+3. Set time boundaries even for learning: "I can invest [X hours/week]"
+4. Track what you're gaining - if learning plateaus, reassess`;
+                    boundaryLanguage = `"Yes! I'm interested in learning [specific skill]. I can commit [time boundary]. Let's check in at [date] to see how it's going."`;
+                } else if (isExploitation) {
+                    decision = 'DECLINE';
+                    color = 'text-red-400';
+                    breakdown = `**USEFUL:** To them, not you
+**REQUIRED:** You're the default, not the best fit
+**NEEDED:** This is availability exploitation`;
+                    reasoning = `Your answer about who benefits: "${whoBenefits.substring(0, 120)}..." shows you're being asked because you're available, not because this serves you. Even juniors can decline.`;
+                    nextSteps = `1. Decline politely but firmly
+2. Don't over-explain - "I'm not available" is enough
+3. If this is a pattern, it's worth addressing: "I've noticed I'm often asked to..."
+4. Protect learning time for strategic development`;
+                    boundaryLanguage = `"I'm not available for this right now. I need to focus on [your priority]."`;
+                } else {
+                    decision = 'ACCEPT';
+                    color = 'text-green-400';
+                    breakdown = `**USEFUL:** Yes - learning opportunity
+**REQUIRED:** Builds capability
+**NEEDED:** Part of skill development phase`;
+                    reasoning = `This provides USEFUL experience. From what you described: "${situation.substring(0, 120)}..." At junior level, exposure matters. Set boundaries around time investment.`;
+                    nextSteps = `1. Accept with clear time limits
+2. Track what you're learning
+3. Build relationships while you contribute
+4. If learning stops, you can reassess`;
+                    boundaryLanguage = `"I can take this on. I'll plan to invest [time amount]. Let's touch base in [timeframe] to see how it's going."`;
+                }
+            }
+            
+            return { decision, color, reasoning, breakdown, nextSteps, boundaryLanguage };
         }
 
         // Render functions
@@ -283,15 +411,79 @@
                         <p class="text-gray-400 text-sm mt-1">Threshold: ${state.profile.threshold}</p>
                     </div>
 
-                    <div class="flex gap-3">
-                        <button onclick="resetAssessment()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded flex items-center justify-center gap-2 transition-all">
+                    <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-6 backdrop-blur">
+                        <h3 class="text-lg font-semibold mb-4 text-amber-400">U.R.N. Assessment Breakdown</h3>
+                        <div class="text-gray-300 space-y-2 whitespace-pre-line">
+                            ${placement.breakdown}
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-6 backdrop-blur">
+                        <h3 class="text-lg font-semibold mb-4 text-green-400">Next Steps</h3>
+                        <div class="text-gray-300 whitespace-pre-line">
+                            ${placement.nextSteps}
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-6 backdrop-blur">
+                        <h3 class="text-lg font-semibold mb-4 text-purple-400">Boundary Language You Can Use</h3>
+                        <div class="bg-slate-900/50 p-4 rounded border border-slate-600">
+                            <p class="text-gray-300 italic">
+                                ${placement.boundaryLanguage}
+                            </p>
+                        </div>
+                        <p class="text-gray-400 text-sm mt-3">
+                            Copy this language directly or adapt it to your situation. Clear boundaries require clear language.
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-6 backdrop-blur">
+                        <h3 class="text-lg font-semibold mb-4 text-green-400">Share Your Result</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <button onclick="shareEmail()" class="bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-4 rounded flex items-center justify-center gap-2 transition-all">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                    <polyline points="22,6 12,13 2,6"></polyline>
+                                </svg>
+                                Email
+                            </button>
+                            <button onclick="shareLinkedIn()" class="bg-[#0077b5] hover:bg-[#006399] text-white font-semibold py-3 px-4 rounded flex items-center justify-center gap-2 transition-all">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.3 6.5a1.78 1.78 0 01-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19a.66.66 0 000 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"></path>
+                                </svg>
+                                LinkedIn
+                            </button>
+                            <button onclick="shareTwitter()" class="bg-black hover:bg-gray-800 text-white font-semibold py-3 px-4 rounded flex items-center justify-center gap-2 transition-all">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
+                                </svg>
+                                X
+                            </button>
+                            <button onclick="shareFacebook()" class="bg-[#1877f2] hover:bg-[#166fe5] text-white font-semibold py-3 px-4 rounded flex items-center justify-center gap-2 transition-all">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"></path>
+                                </svg>
+                                Facebook
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <button onclick="resetAssessment()" class="bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded flex items-center justify-center gap-2 transition-all">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="23 4 23 10 17 10"></polyline>
                                 <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
                             </svg>
                             New Assessment
                         </button>
-                        <button onclick="downloadResult()" class="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-900 font-semibold py-3 px-6 rounded flex items-center justify-center gap-2 transition-all">
+                        <button onclick="copyResult()" id="copyButton" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded flex items-center justify-center gap-2 transition-all">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            <span id="copyButtonText">Copy Result</span>
+                        </button>
+                        <button onclick="downloadResult()" class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-900 font-semibold py-3 px-6 rounded flex items-center justify-center gap-2 transition-all">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                 <polyline points="7 10 12 15 17 10"></polyline>
@@ -365,13 +557,164 @@
 
         function downloadResult() {
             const placement = getPlacement();
-            const text = `U.R.N.™ Assessment\n\nProfile: ${state.profile.title}\nDecision: ${placement.decision}\n\nReasoning: ${placement.reasoning}`;
-            const blob = new Blob([text], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'urn-assessment.txt';
-            a.click();
+            const text = `U.R.N.™ Assessment Result
+
+PLACEMENT: ${placement.decision}
+
+${placement.reasoning}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+YOUR PROFILE
+${state.profile.title}
+Threshold: ${state.profile.threshold}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+U.R.N. ASSESSMENT BREAKDOWN
+${placement.breakdown}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NEXT STEPS
+${placement.nextSteps}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+BOUNDARY LANGUAGE YOU CAN USE
+${placement.boundaryLanguage}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+U.R.N.™ by Adenike Omoregbee
+https://nikkymakes.github.io/U.R.N/`;
+            
+            try {
+                const blob = new Blob([text], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'urn-assessment.txt';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                // Fallback: copy to clipboard if download fails
+                copyResult();
+            }
+        }
+
+        function copyResult() {
+            const placement = getPlacement();
+            const text = `U.R.N.™ Assessment Result
+
+PLACEMENT: ${placement.decision}
+
+${placement.reasoning}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+YOUR PROFILE
+${state.profile.title}
+Threshold: ${state.profile.threshold}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+U.R.N. ASSESSMENT BREAKDOWN
+${placement.breakdown}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NEXT STEPS
+${placement.nextSteps}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+BOUNDARY LANGUAGE YOU CAN USE
+${placement.boundaryLanguage}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+U.R.N.™ by Adenike Omoregbee
+https://nikkymakes.github.io/U.R.N/`;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                // Show success feedback
+                const button = document.getElementById('copyButtonText');
+                const originalText = button.textContent;
+                button.textContent = 'Copied! ✓';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                
+                const button = document.getElementById('copyButtonText');
+                const originalText = button.textContent;
+                button.textContent = 'Copied! ✓';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                }, 2000);
+            });
+        }
+
+        function getShareText() {
+            const placement = getPlacement();
+            return `I just used U.R.N.™ to assess a decision. My placement: ${placement.decision}
+
+U.R.N.™ (Useful, Required, Needed) is a pre-engagement decision filter - helping you decide whether your involvement is actually necessary BEFORE burnout.
+
+Try it yourself: https://nikkymakes.github.io/U.R.N/
+
+By Adenike Omoregbee`;
+        }
+
+        function shareEmail() {
+            const placement = getPlacement();
+            const subject = encodeURIComponent('My U.R.N.™ Assessment Result');
+            const body = encodeURIComponent(`I just completed a U.R.N.™ assessment and got: ${placement.decision}
+
+${placement.reasoning}
+
+Profile: ${state.profile.title}
+
+U.R.N.™ (Useful, Required, Needed) is a pre-engagement decision filter that helps you decide whether your involvement in a situation is actually necessary - BEFORE time, energy, or identity gets invested.
+
+Try it yourself: https://nikkymakes.github.io/U.R.N/
+
+U.R.N.™ by Adenike Omoregbee`);
+            
+            window.location.href = `mailto:?subject=${subject}&body=${body}`;
+        }
+
+        function shareLinkedIn() {
+            const text = encodeURIComponent(getShareText());
+            const url = 'https://nikkymakes.github.io/U.R.N/';
+            window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
+        }
+
+        function shareTwitter() {
+            const placement = getPlacement();
+            const text = encodeURIComponent(`I used U.R.N.™ to assess a decision. Result: ${placement.decision}
+
+Try this pre-engagement decision filter yourself: https://nikkymakes.github.io/U.R.N/
+
+By @[YourTwitterHandle]`);
+            window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
+        }
+
+        function shareFacebook() {
+            const url = encodeURIComponent('https://nikkymakes.github.io/U.R.N/');
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
         }
 
         // Main render
